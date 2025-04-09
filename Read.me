@@ -1,0 +1,32 @@
+Tecnologías principales:
+React para la interfaz.
+Phaser.js para la lógica del juego.
+IndexedDB para el almacenamiento local.
+Service Workers y Cache API para funcionalidades PWA.
+
+Instalación de dependencias 
+phaser: Motor de juego.
+idb: API más sencilla para manejar IndexedDB.
+workbox-webpack-plugin: Para manejar Service Workers fácilmente.
+
+
+Barras de progreso 
+
+Rojo (Hambre)
+Verde (Higiene)
+Azul (Energía)
+Amarillo (Diversión)
+
+Para IndexedDB
+npm install idb 
+
+Código db.ts:
+✅ Crea una base de datos llamada gameDB.
+✅ Almacena el estado del personaje en la tabla characterState.
+✅ Recupera los datos guardados cuando el juego inicia.
+
+
+Notificaciones Push
+
+✅ Mostrar una notificación cuando alguna estadística del personaje sea menor al 20%.
+✅ Hacer que las notificaciones funcionen en segundo plano usando Service Workers.
