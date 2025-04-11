@@ -20,6 +20,13 @@ export class GameScene extends Phaser.Scene {
   private coinsText!: Phaser.GameObjects.Text;
   private bars: { [key: string]: Phaser.GameObjects.Container } = {};
   private buttons: Phaser.GameObjects.Container[] = [];
+  private shopWindow!: Phaser.GameObjects.Container;
+  private shopItems = [
+    { emoji: '🥕', name: 'Zanahoria', price: 50, hunger: 10 },
+    { emoji: '🍎', name: 'Manzana', price: 100, hunger: 25 },
+    { emoji: '🥬', name: 'Lechuga', price: 75, hunger: 15 },
+    { emoji: '🌾', name: 'Heno', price: 150, hunger: 40 }
+  ];
 
   constructor() {
     super({ key: 'GameScene' });
@@ -98,6 +105,7 @@ export class GameScene extends Phaser.Scene {
     this.createButton('Comer', this.scale.width - 150, this.scale.height - 150, () => this.feed());
     this.createButton('Jugar', this.scale.width - 150, this.scale.height - 100, () => this.play());
     this.createButton('Bañar', this.scale.width - 150, this.scale.height - 50, () => this.clean());
+    this.createButton('Tienda 🏪', this.scale.width - 150, this.scale.height - 250, () => this.openShop());
 
     // Reducir valores más lentamente
     this.time.addEvent({
@@ -106,6 +114,9 @@ export class GameScene extends Phaser.Scene {
       callbackScope: this,
       loop: true,
     });
+
+    // Crear el contenedor de la tienda pero mantenerlo invisible
+    this.createShopWindow();
   }
 
   private createStatusBar(stat: string, x: number, y: number, color: number) {
@@ -232,6 +243,87 @@ export class GameScene extends Phaser.Scene {
     bg.on('pointerout', () => bg.setFillStyle(0xFF69B4));
     
     this.buttons.push(button);
+  }
+
+  private createShopWindow() {
+    this.shopWindow = this.add.container(this.scale.width / 2, this.scale.height / 2);
+    
+    // Fondo semi-transparente
+    const bg = this.add.rectangle(0, 0, 400, 500, 0x000000, 0.8)
+      .setOrigin(0.5);
+    
+    // Título de la tienda
+    const title = this.add.text(0, -200, '🏪 Tienda 🏪', {
+      fontSize: '32px',
+      color: '#FFFFFF'
+    }).setOrigin(0.5);
+
+    this.shopWindow.add([bg, title]);
+
+    // Añadir items de la tienda
+    this.shopItems.forEach((item, index) => {
+      const y = -100 + (index * 80);
+      const itemContainer = this.add.container(0, y);
+
+      const itemText = this.add.text(0, 0, 
+        `${item.emoji} ${item.name} - 🪙 ${item.price}`, 
+        { fontSize: '24px', color: '#FFFFFF' }
+      ).setOrigin(0.5);
+
+      const buyButton = this.add.text(100, 0, '🛍️', 
+        { fontSize: '24px' }
+      )
+      .setInteractive({ useHandCursor: true })
+      .on('pointerdown', () => this.buyItem(item));
+
+      itemContainer.add([itemText, buyButton]);
+      this.shopWindow.add(itemContainer);
+    });
+
+    // Botón cerrar
+    const closeButton = this.add.text(160, -220, '❌', 
+      { fontSize: '24px' }
+    )
+    .setInteractive({ useHandCursor: true })
+    .on('pointerdown', () => this.closeShop());
+
+    this.shopWindow.add(closeButton);
+    this.shopWindow.setVisible(false);
+  }
+
+  private openShop() {
+    this.shopWindow.setVisible(true);
+  }
+
+  private closeShop() {
+    this.shopWindow.setVisible(false);
+  }
+
+  private buyItem(item: { price: number, hunger: number, emoji: string }) {
+    if (this.coins >= item.price) {
+      this.coins -= item.price;
+      this.hunger = Math.min(100, this.hunger + item.hunger);
+      this.coinsText.setText(`🪙 ${this.coins}`);
+      this.updateStatusBar('hunger');
+      
+      // Mostrar emoji flotante del item comprado
+      const floatingEmoji = this.add.text(this.player.x, this.player.y - 50, item.emoji, { fontSize: '32px' });
+      this.tweens.add({
+        targets: floatingEmoji,
+        y: this.player.y - 100,
+        alpha: 0,
+        duration: 1000,
+        onComplete: () => floatingEmoji.destroy()
+      });
+    } else {
+      // Mostrar mensaje de error si no hay suficientes monedas
+      const errorText = this.add.text(this.shopWindow.x, this.shopWindow.y + 200, 
+        '❌ No tienes suficientes monedas', 
+        { fontSize: '20px', color: '#FF0000' }
+      ).setOrigin(0.5);
+      
+      this.time.delayedCall(1000, () => errorText.destroy());
+    }
   }
 }
 
