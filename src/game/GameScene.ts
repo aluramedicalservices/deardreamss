@@ -27,6 +27,17 @@ export class GameScene extends Phaser.Scene {
     { emoji: '🥬', name: 'Lechuga', price: 75, hunger: 15 },
     { emoji: '🌾', name: 'Heno', price: 150, hunger: 40 }
   ];
+  private foodItems = [
+    { emoji: '🥕', value: 15 },
+    { emoji: '🍎', value: 20 },
+    { emoji: '🥬', value: 10 },
+    { emoji: '🌾', value: 25 }
+  ];
+  private foodContainer!: Phaser.GameObjects.Container;
+  private toyEmojis = ['🎈', '⭐', '🎾', '🦋', '🌸'];
+  private isPlaying: boolean = false;
+  private playScore: number = 0;
+  private playScoreText!: Phaser.GameObjects.Text;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -117,6 +128,9 @@ export class GameScene extends Phaser.Scene {
 
     // Crear el contenedor de la tienda pero mantenerlo invisible
     this.createShopWindow();
+
+    // Añadir antes del final de create()
+    this.createFoodContainer();
   }
 
   private createStatusBar(stat: string, x: number, y: number, color: number) {
@@ -182,10 +196,89 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  public async feed() {
-    this.hunger = Math.min(100, this.hunger + 20);
+  public feed() {
+    if (this.foodContainer.visible) {
+      this.foodContainer.setVisible(false);
+      return;
+    }
+
+    this.foodContainer.removeAll(true);
+    
+    // Crear opciones de comida (ajustando la posición Y para que aparezca más arriba)
+    this.foodItems.forEach((food, index) => {
+      const foodEmoji = this.add.text(
+        this.scale.width/2 - 100 + (index * 50),
+        this.scale.height/2 - 100, // Modificado para que aparezca más arriba
+        food.emoji,
+        { fontSize: '40px' }
+      )
+      .setInteractive({ draggable: true, useHandCursor: true });
+
+      // Configurar eventos de arrastre
+      foodEmoji.on('dragstart', () => {
+        foodEmoji.setAlpha(0.8);
+      });
+
+      foodEmoji.on('drag', (pointer: Phaser.Input.Pointer) => {
+        foodEmoji.x = pointer.x;
+        foodEmoji.y = pointer.y;
+      });
+
+      foodEmoji.on('dragend', () => {
+        foodEmoji.setAlpha(1);
+        // Verificar si la comida está cerca del cervatillo
+        const distance = Phaser.Math.Distance.Between(
+          foodEmoji.x,
+          foodEmoji.y,
+          this.player.x,
+          this.player.y
+        );
+
+        if (distance < 100) { // Si está lo suficientemente cerca
+          this.feedAnimal(food.value);
+          // Animación de comida
+          this.tweens.add({
+            targets: foodEmoji,
+            scale: 0,
+            duration: 500,
+            onComplete: () => {
+              foodEmoji.destroy();
+              // Si no quedan más comidas visibles, ocultar el contenedor
+              if (this.foodContainer.length === 0) {
+                this.foodContainer.setVisible(false);
+              }
+            }
+          });
+        } else {
+          // Regresar la comida a su posición original si no llegó al cervatillo
+          this.tweens.add({
+            targets: foodEmoji,
+            x: this.scale.width/2 - 100 + (index * 50),
+            y: this.scale.height/2,
+            duration: 300
+          });
+        }
+      });
+
+      this.foodContainer.add(foodEmoji);
+    });
+
+    this.foodContainer.setVisible(true);
+  }
+
+  private feedAnimal(value: number) {
+    this.hunger = Math.min(100, this.hunger + value);
     this.updateStatusBar('hunger');
-    await this.saveGameState();
+    
+    // Mostrar emoji de corazón sobre el cervatillo
+    const heart = this.add.text(this.player.x, this.player.y - 50, '❤️', { fontSize: '32px' });
+    this.tweens.add({
+      targets: heart,
+      y: this.player.y - 100,
+      alpha: 0,
+      duration: 1000,
+      onComplete: () => heart.destroy()
+    });
   }
 
   public async clean() {
@@ -193,8 +286,42 @@ export class GameScene extends Phaser.Scene {
     this.player.setTexture('bathing');
     this.sound.play('bath');
     this.updateStatusBar('hygiene');
-    await this.saveGameState();
 
+    // Añadir animación de burbujas y agua
+    const bubbles = ['🫧', '🛁', '💧'];
+    let delay = 0;
+    
+    // Crear múltiples burbujas alrededor del cervatillo
+    for (let i = 0; i < 8; i++) {
+      delay += 150;
+      const randomBubble = bubbles[Math.floor(Math.random() * bubbles.length)];
+      const randomX = this.player.x + Phaser.Math.Between(-50, 50);
+      const randomY = this.player.y + Phaser.Math.Between(-30, 30);
+      
+      const bubble = this.add.text(randomX, randomY, randomBubble, {
+        fontSize: '24px'
+      }).setAlpha(0);
+
+      this.tweens.add({
+        targets: bubble,
+        alpha: { from: 0, to: 1 },
+        y: '-=30',
+        duration: 1000,
+        ease: 'Power2',
+        delay: delay,
+        onComplete: () => {
+          this.tweens.add({
+            targets: bubble,
+            alpha: 0,
+            y: '-=20',
+            duration: 500,
+            onComplete: () => bubble.destroy()
+          });
+        }
+      });
+    }
+
+    await this.saveGameState();
     setTimeout(() => this.player.setTexture('idle'), 1000);
   }
 
@@ -203,16 +330,153 @@ export class GameScene extends Phaser.Scene {
     this.player.setTexture('sleeping');
     this.sound.play('sleep');
     this.updateStatusBar('energy');
-    await this.saveGameState();
+    
+    // Añadir animación de Zs
+    let delay = 0;
+    const zs = ['💤', '💤', '💤'];
+    zs.forEach((z, index) => {
+      delay += 200;
+      const zText = this.add.text(
+        this.player.x + 20 + (index * 15),
+        this.player.y - 30 - (index * 15),
+        z,
+        { fontSize: '24px' }
+      ).setAlpha(0);
 
+      this.tweens.add({
+        targets: zText,
+        alpha: { from: 0, to: 1 },
+        y: '-=20',
+        duration: 1000,
+        ease: 'Power2',
+        delay: delay,
+        onComplete: () => {
+          this.tweens.add({
+            targets: zText,
+            alpha: 0,
+            y: '-=10',
+            duration: 500,
+            onComplete: () => zText.destroy()
+          });
+        }
+      });
+    });
+
+    await this.saveGameState();
     setTimeout(() => this.player.setTexture('idle'), 2000);
   }
 
   public async play() {
-    this.fun = Math.min(100, this.fun + 20);
-    this.sound.play('play');
-    this.updateStatusBar('fun');
-    await this.saveGameState();
+    if (this.isPlaying) return;
+    this.isPlaying = true;
+    this.playScore = 0;
+    
+    // Crear texto de puntuación
+    this.playScoreText = this.add.text(
+      this.scale.width/2,
+      50,
+      '🎮 0',
+      { fontSize: '32px' }
+    ).setOrigin(0.5);
+
+    // Iniciar bucle de juego
+    const gameLoop = this.time.addEvent({
+      delay: 1000,
+      callback: this.spawnToy,
+      callbackScope: this,
+      repeat: 9 // 10 juguetes en total
+    });
+
+    // Terminar juego después de cierto tiempo
+    this.time.delayedCall(12000, async () => {
+      this.isPlaying = false;
+      this.playScoreText.destroy();
+      
+      // Recompensa basada en la puntuación
+      const funIncrease = Math.min(50, this.playScore * 5);
+      this.fun = Math.min(100, this.fun + funIncrease);
+      this.updateStatusBar('fun');
+      
+      // Mostrar emoji de celebración
+      const celebration = this.add.text(
+        this.player.x,
+        this.player.y - 50,
+        '🎉',
+        { fontSize: '40px' }
+      );
+      
+      this.tweens.add({
+        targets: celebration,
+        y: '-=50',
+        alpha: 0,
+        duration: 1000,
+        onComplete: () => celebration.destroy()
+      });
+
+      await this.saveGameState();
+    });
+  }
+
+  private spawnToy() {
+    if (!this.isPlaying) return;
+    
+    const randomToy = this.toyEmojis[Math.floor(Math.random() * this.toyEmojis.length)];
+    const x = Phaser.Math.Between(100, this.scale.width - 100);
+    const y = Phaser.Math.Between(100, this.scale.height - 100);
+    
+    const toy = this.add.text(x, y, randomToy, {
+      fontSize: '40px'
+    })
+    .setInteractive({ useHandCursor: true });
+
+    // Hacer que el juguete brille
+    this.tweens.add({
+      targets: toy,
+      scale: 1.2,
+      duration: 500,
+      yoyo: true,
+      repeat: -1
+    });
+
+    // Hacer que el juguete desaparezca después de un tiempo
+    this.time.delayedCall(2000, () => {
+      if (toy.active) {
+        toy.destroy();
+      }
+    });
+
+    // Evento de clic en el juguete
+    toy.on('pointerdown', () => {
+      this.playScore++;
+      this.playScoreText.setText(`🎮 ${this.playScore}`);
+      
+      // Efecto de recolección
+      this.tweens.add({
+        targets: toy,
+        scale: 0,
+        alpha: 0,
+        duration: 200,
+        onComplete: () => toy.destroy()
+      });
+
+      // Efecto de partículas de estrellas
+      const stars = ['✨', '⭐', '💫'];
+      for (let i = 0; i < 3; i++) {
+        const star = this.add.text(toy.x, toy.y, 
+          stars[Math.floor(Math.random() * stars.length)],
+          { fontSize: '24px' }
+        );
+        
+        this.tweens.add({
+          targets: star,
+          x: toy.x + Phaser.Math.Between(-50, 50),
+          y: toy.y + Phaser.Math.Between(-50, 50),
+          alpha: 0,
+          duration: 500,
+          onComplete: () => star.destroy()
+        });
+      }
+    });
   }
 
   private async saveGameState() {
@@ -324,6 +588,11 @@ export class GameScene extends Phaser.Scene {
       
       this.time.delayedCall(1000, () => errorText.destroy());
     }
+  }
+
+  private createFoodContainer() {
+    this.foodContainer = this.add.container(0, 0);
+    this.foodContainer.setVisible(false);
   }
 }
 
