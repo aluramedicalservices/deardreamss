@@ -18,7 +18,7 @@ export class GameScene extends Phaser.Scene {
   private fun: number = 100;
   private coins: number = 1000;
   private coinsText!: Phaser.GameObjects.Text;
-  private bars: { [key: string]: Phaser.GameObjects.Graphics } = {};
+  private bars: { [key: string]: Phaser.GameObjects.Container } = {};
   private buttons: Phaser.GameObjects.Container[] = [];
 
   constructor() {
@@ -34,6 +34,7 @@ export class GameScene extends Phaser.Scene {
     this.load.image('bathing', '/player.png');
     this.load.image('sleeping', '/player.png');
     this.load.image('background', 'background.png'); 
+    // Eliminamos la carga de imágenes de corazones ya que usaremos emojis
   }
 
   async create() {
@@ -108,17 +109,31 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createStatusBar(stat: string, x: number, y: number, color: number) {
-    const bar = this.add.graphics();
-    bar.fillStyle(color, 1);
-    bar.fillRect(x, y, 200, 20);
-    this.bars[stat] = bar;
+    const heartsContainer = this.add.container(x, y);
+    const hearts: Phaser.GameObjects.Text[] = [];
+    
+    for (let i = 0; i < 5; i++) {
+      const heart = this.add.text(i * 35, 0, '❤️', {
+        fontSize: '24px'
+      });
+      hearts.push(heart);
+      heartsContainer.add(heart);
+    }
+    
+    this.bars[stat] = heartsContainer;
+    this.bars[stat].getData = () => hearts;
   }
 
   private updateStatusBar(stat: string) {
     const value = this[stat as keyof this] as number;
-    this.bars[stat].clear();
-    this.bars[stat].fillStyle(stat === 'hunger' ? 0xff0000 : stat === 'hygiene' ? 0x00ff00 : stat === 'energy' ? 0x0000ff : 0xffff00, 1);
-    this.bars[stat].fillRect(20, stat === 'hunger' ? 20 : stat === 'hygiene' ? 50 : stat === 'energy' ? 80 : 110, (value / 100) * 200, 20);
+    const hearts = this.bars[stat].getData();
+    // Cambiamos el cálculo para que se redondee hacia abajo en lugar de hacia arriba
+    const heartsFull = Math.floor((value / 100) * 5);
+    
+    hearts.forEach((heart, index) => {
+      // Aseguramos que los corazones se vacíen cuando el valor baje
+      heart.setText(index < heartsFull ? '❤️' : '🤍');
+    });
   }
 
   private updateAllStatusBars() {

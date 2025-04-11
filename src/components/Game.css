@@ -58,10 +58,11 @@
   color: #666;
 }
 
-.feed { color: #ff6b6b; }
-.clean { color: #4ecdc4; }
-.sleep { color: #9c88ff; }
-.play { color: #ffd93d; }
+/* Aquí están los colores de los botones - hay que asegurarse que estos cambien */
+.feed { color: #FFD1DC !important; }  /* Rosa pastel más fuerte */
+.clean { color: #ADD8E6 !important; }  /* Azul pastel */
+.sleep { color: #E6E6FA !important; }  /* Lavanda pastel */
+.play { color: #FFEBCD !important; }   /* Melocotón pastel */
 
 @keyframes buttonPulse {
   0% { transform: scale(1); }
@@ -106,18 +107,30 @@
   text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.5);
 }
 
+/* Eliminar los estilos antiguos de barras y reemplazar con estos */
 .status-bar-wrapper {
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 10px;
-  height: 20px;
-  overflow: hidden;
-  position: relative;
-  height: 12px;
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 6px;
-  overflow: hidden;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+  display: flex;
+  gap: 5px;
+  padding: 5px;
 }
+
+.heart-container {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.heart {
+  width: 25px;
+  height: 25px;
+  transition: all 0.3s ease;
+}
+
+/* Colores pastel para los corazones */
+.heart.hunger { filter: hue-rotate(0deg) saturate(0.8) brightness(1.2); }
+.heart.hygiene { filter: hue-rotate(120deg) saturate(0.8) brightness(1.2); }
+.heart.energy { filter: hue-rotate(240deg) saturate(0.8) brightness(1.2); }
+.heart.fun { filter: hue-rotate(60deg) saturate(0.8) brightness(1.2); }
 
 .status-bar-fill {
   height: 100%;
@@ -136,10 +149,10 @@
 }
 
 /* Estilos para diferentes estados */
-.status-bar-fill.hunger { background: linear-gradient(90deg, #ff6b6b, #ff8787); }
-.status-bar-fill.hygiene { background: linear-gradient(90deg, #4ecdc4, #45b7af); }
-.status-bar-fill.energy { background: linear-gradient(90deg, #9c88ff, #8c7ae6); }
-.status-bar-fill.fun { background: linear-gradient(90deg, #ffd93d, #f6e58d); }
+.status-bar-fill.hunger { background: linear-gradient(90deg, #FFD1DC, #FFC0CB); }  /* Rosa pastel */
+.status-bar-fill.hygiene { background: linear-gradient(90deg, #ADD8E6, #B0E0E6); }  /* Azul pastel */
+.status-bar-fill.energy { background: linear-gradient(90deg, #E6E6FA, #D8BFD8); }  /* Lavanda pastel */
+.status-bar-fill.fun { background: linear-gradient(90deg, #FFEBCD, #FFE4B5); }     /* Melocotón pastel */
 
 /* Mejoras responsive */
 @media (max-width: 768px) {
