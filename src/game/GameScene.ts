@@ -16,7 +16,10 @@ export class GameScene extends Phaser.Scene {
   private hygiene: number = 100;
   private energy: number = 100;
   private fun: number = 100;
+  private coins: number = 1000;
+  private coinsText!: Phaser.GameObjects.Text;
   private bars: { [key: string]: Phaser.GameObjects.Graphics } = {};
+  private buttons: Phaser.GameObjects.Container[] = [];
 
   constructor() {
     super({ key: 'GameScene' });
@@ -62,9 +65,42 @@ export class GameScene extends Phaser.Scene {
 
     this.updateAllStatusBars();
 
-    // Reducir valores con el tiempo y guardar en IndexedDB
+    // Agregar título del juego
+    this.add.text(
+      this.scale.width / 2,
+      10,
+      'Dear Dreams',
+      {
+        fontSize: '48px',
+        fontFamily: 'cursive',
+        color: '#FF69B4',
+        stroke: '#FFFFFF',
+        strokeThickness: 2,
+        shadow: { color: '#000000', fill: true, offsetX: 2, offsetY: 2, blur: 8 }
+      }
+    ).setOrigin(0.5, 0);
+
+    // Contador de monedas (ajustado para dar espacio al título)
+    this.coinsText = this.add.text(
+      this.scale.width / 2,
+      100,
+      `🪙 ${this.coins}`,
+      {
+        fontSize: '32px',
+        color: '#FFD700',
+        shadow: { color: '#000000', fill: true, offsetX: 2, offsetY: 2, blur: 4 }
+      }
+    ).setOrigin(0.5, 0);
+
+    // Crear botones interactivos
+    this.createButton('Dormir', this.scale.width - 150, this.scale.height - 200, () => this.sleep());
+    this.createButton('Comer', this.scale.width - 150, this.scale.height - 150, () => this.feed());
+    this.createButton('Jugar', this.scale.width - 150, this.scale.height - 100, () => this.play());
+    this.createButton('Bañar', this.scale.width - 150, this.scale.height - 50, () => this.clean());
+
+    // Reducir valores más lentamente
     this.time.addEvent({
-      delay: 3000, // Cada 3 segundos
+      delay: 5000, // Cada 5 segundos en lugar de 3
       callback: this.decreaseStats,
       callbackScope: this,
       loop: true,
@@ -93,10 +129,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   private async decreaseStats() {
-    this.hunger = Math.max(0, this.hunger - 5);
-    this.hygiene = Math.max(0, this.hygiene - 3);
-    this.energy = Math.max(0, this.energy - 2);
-    this.fun = Math.max(0, this.fun - 4);
+    this.hunger = Math.max(0, this.hunger - 2);    // Reducido de 5 a 2
+    this.hygiene = Math.max(0, this.hygiene - 1);  // Reducido de 3 a 1
+    this.energy = Math.max(0, this.energy - 1);    // Reducido de 2 a 1
+    this.fun = Math.max(0, this.fun - 2);          // Reducido de 4 a 2
 
     this.updateAllStatusBars();
     await this.saveGameState();
@@ -160,6 +196,27 @@ export class GameScene extends Phaser.Scene {
       energy: this.energy,
       fun: this.fun,
     });
+  }
+
+  private createButton(text: string, x: number, y: number, callback: () => void) {
+    const button = this.add.container(x, y);
+    
+    const bg = this.add.rectangle(0, 0, 120, 40, 0xFF69B4)
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+    
+    const buttonText = this.add.text(0, 0, text, {
+      fontSize: '20px',
+      color: '#FFFFFF'
+    }).setOrigin(0.5);
+
+    button.add([bg, buttonText]);
+    
+    bg.on('pointerdown', callback);
+    bg.on('pointerover', () => bg.setFillStyle(0xFF1493));
+    bg.on('pointerout', () => bg.setFillStyle(0xFF69B4));
+    
+    this.buttons.push(button);
   }
 }
 

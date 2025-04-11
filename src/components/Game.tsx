@@ -25,18 +25,6 @@ const Game = () => {
       game.destroy(true);
     };
   }, []);
-
-  return (
-    <div>
-      <div ref={gameRef} />
-      <div style={{ marginTop: '10px' }}>
-        <button onClick={() => gameScene?.feed()}>Alimentar</button>
-        <button onClick={() => gameScene?.clean()}>Bañar</button>
-        <button onClick={() => gameScene?.sleep()}>Dormir</button>
-        <button onClick={() => gameScene?.play()}>Jugar</button>
-      </div>
-    </div>
-  );
 };
 
 export default Game;
